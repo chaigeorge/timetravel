@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tanzania by Year</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+–bg: #0a0a06;
+–gold: #c8a84b;
+–gold-light: #e8c97a;
+–tan: #d4956a;
+–green: #3a6b4a;
+–green-light: #5a9b6e;
+–cream: #f0e8d0;
+–muted: #6b6550;
+–line: #2a2a1a;
+}
+
+html, body {
+height: 100%;
+background: var(–bg);
+color: var(–cream);
+font-family: ‘DM Mono’, monospace;
+overflow: hidden;
+}
+
+/* Grain texture overlay */
+body::before {
+content: ‘’;
+position: fixed;
+inset: 0;
+background-image: url(“data:image/svg+xml,%3Csvg viewBox=‘0 0 256 256’ xmlns=‘http://www.w3.org/2000/svg’%3E%3Cfilter id=‘noise’%3E%3CfeTurbulence type=‘fractalNoise’ baseFrequency=‘0.9’ numOctaves=‘4’ stitchTiles=‘stitch’/%3E%3C/filter%3E%3Crect width=‘100%25’ height=‘100%25’ filter=‘url(%23noise)’ opacity=‘0.04’/%3E%3C/svg%3E”);
+pointer-events: none;
+z-index: 1000;
+opacity: 0.4;
+}
+
+header {
+position: fixed;
+top: 0;
+left: 0;
+right: 0;
+z-index: 100;
+padding: 28px 48px 20px;
+display: flex;
+align-items: flex-end;
+justify-content: space-between;
+background: linear-gradient(to bottom, rgba(10,10,6,0.98) 60%, transparent);
+}
+
+.site-title {
+font-family: ‘Playfair Display’, serif;
+font-size: clamp(1.4rem, 2.5vw, 2rem);
+color: var(–gold);
+letter-spacing: 0.02em;
+line-height: 1;
+}
+
+.site-subtitle {
+font-size: 0.65rem;
+color: var(–muted);
+letter-spacing: 0.15em;
+text-transform: uppercase;
+margin-top: 4px;
+}
+
+.scroll-hint {
+font-size: 0.62rem;
+color: var(–muted);
+letter-spacing: 0.1em;
+text-transform: uppercase;
+display: flex;
+align-items: center;
+gap: 10px;
+}
+
+.scroll-hint::before {
+content: ‘’;
+display: block;
+width: 40px;
+height: 1px;
+background: var(–muted);
+animation: pulse-line 2s ease-in-out infinite;
+}
+
+@keyframes pulse-line {
+0%, 100% { opacity: 0.3; width: 40px; }
+50% { opacity: 1; width: 60px; }
+}
+
+/* Main scrollable area */
+.timeline-outer {
+position: fixed;
+inset: 0;
+overflow-x: scroll;
+overflow-y: hidden;
+cursor: grab;
+scrollbar-width: none;
+}
+.timeline-outer::-webkit-scrollbar { display: none; }
+.timeline-outer.grabbing { cursor: grabbing; }
+
+.timeline-track {
+display: flex;
+align-items: center;
+height: 100vh;
+padding: 0 15vw;
+gap: 0;
+width: max-content;
+position: relative;
+}
+
+/* The horizontal line */
+.timeline-track::before {
+content: ‘’;
+position: absolute;
+top: 50%;
+left: 0;
+right: 0;
+height: 1px;
+background: linear-gradient(to right, transparent, var(–line) 10%, var(–line) 90%, transparent);
+transform: translateY(-50%);
+}
+
+/* Era backgrounds */
+.era {
+display: flex;
+align-items: center;
+height: 100%;
+position: relative;
+padding: 0 20px;
+}
+
+.era-label {
+position: absolute;
+bottom: 40px;
+left: 50%;
+transform: translateX(-50%);
+font-size: 0.55rem;
+letter-spacing: 0.25em;
+text-transform: uppercase;
+color: var(–muted);
+white-space: nowrap;
+opacity: 0.5;
+}
+
+/* Event cards */
+.event {
+display: flex;
+flex-direction: column;
+align-items: center;
+position: relative;
+margin: 0 clamp(40px, 5vw, 80px);
+cursor: default;
+}
+
+.event-upper {
+display: flex;
+flex-direction: column;
+align-items: center;
+padding-bottom: 36px;
+margin-bottom: 0;
+}
+
+.event-lower {
+display: flex;
+flex-direction: column;
+align-items: center;
+padding-top: 36px;
+margin-top: 0;
+}
+
+/* Dot on the line */
+.event-dot {
+width: 10px;
+height: 10px;
+border-radius: 50%;
+background: var(–gold);
+border: 2px solid var(–bg);
+box-shadow: 0 0 0 1px var(–gold);
+position: relative;
+z-index: 2;
+transition: transform 0.3s ease, box-shadow 0.3s ease;
+flex-shrink: 0;
+}
+
+.event:hover .event-dot {
+transform: scale(1.8);
+box-shadow: 0 0 12px var(–gold);
+}
+
+.event-dot.major {
+width: 14px;
+height: 14px;
+background: var(–gold-light);
+box-shadow: 0 0 0 1px var(–gold-light), 0 0 20px rgba(200,168,75,0.3);
+}
+
+.event:hover .event-dot.major {
+box-shadow: 0 0 0 1px var(–gold-light), 0 0 30px rgba(200,168,75,0.6);
+}
+
+/* Connector line from dot to card */
+.event-connector {
+width: 1px;
+background: linear-gradient(to bottom, var(–gold), transparent);
+flex-shrink: 0;
+}
+
+.event-lower .event-connector {
+background: linear-gradient(to top, var(–gold), transparent);
+}
+
+/* The info card */
+.event-card {
+max-width: 200px;
+text-align: center;
+opacity: 0.75;
+transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.event:hover .event-card {
+opacity: 1;
+transform: translateY(-4px);
+}
+
+.event-lower .event-card {
+transform: translateY(0);
+}
+
+.event:hover .event-lower .event-card {
+transform: translateY(4px);
+}
+
+.event-year {
+font-family: ‘Playfair Display’, serif;
+font-size: clamp(1.2rem, 2vw, 1.6rem);
+color: var(–gold);
+line-height: 1;
+margin-bottom: 8px;
+}
+
+.event-year.major {
+font-size: clamp(1.6rem, 2.5vw, 2.2rem);
+color: var(–gold-light);
+}
+
+.event-title {
+font-size: 0.7rem;
+font-weight: 400;
+color: var(–cream);
+letter-spacing: 0.05em;
+line-height: 1.4;
+margin-bottom: 6px;
+}
+
+.event-title.major {
+font-size: 0.8rem;
+font-family: ‘Playfair Display’, serif;
+font-style: italic;
+}
+
+.event-detail {
+font-size: 0.58rem;
+color: var(–muted);
+letter-spacing: 0.03em;
+line-height: 1.5;
+}
+
+.event-tag {
+display: inline-block;
+font-size: 0.5rem;
+letter-spacing: 0.15em;
+text-transform: uppercase;
+padding: 2px 7px;
+border-radius: 20px;
+margin-bottom: 8px;
+}
+
+.tag-ancient { background: rgba(90,155,110,0.15); color: var(–green-light); border: 1px solid rgba(90,155,110,0.3); }
+.tag-trade { background: rgba(200,168,75,0.1); color: var(–gold); border: 1px solid rgba(200,168,75,0.2); }
+.tag-colonial { background: rgba(180,80,60,0.1); color: #d4856a; border: 1px solid rgba(180,80,60,0.2); }
+.tag-independence { background: rgba(90,155,110,0.2); color: var(–green-light); border: 1px solid rgba(90,155,110,0.4); }
+.tag-modern { background: rgba(200,168,75,0.15); color: var(–gold-light); border: 1px solid rgba(200,168,75,0.3); }
+
+/* Gap spacer between eras */
+.era-gap {
+width: 80px;
+flex-shrink: 0;
+position: relative;
+}
+
+/* Progress bar at bottom */
+.progress-bar {
+position: fixed;
+bottom: 0;
+left: 0;
+height: 2px;
+background: linear-gradient(to right, var(–green), var(–gold));
+z-index: 200;
+transition: width 0.1s linear;
+width: 0%;
+}
+
+/* Year indicator */
+.year-indicator {
+position: fixed;
+bottom: 20px;
+left: 50%;
+transform: translateX(-50%);
+font-family: ‘Playfair Display’, serif;
+font-size: 4rem;
+color: rgba(200,168,75,0.07);
+pointer-events: none;
+z-index: 50;
+letter-spacing: 0.1em;
+transition: opacity 0.3s;
+user-select: none;
+}
+
+.flag-emoji {
+font-size: 1.2rem;
+display: block;
+margin-bottom: 4px;
+}
+
+/* intro screen */
+.intro {
+position: fixed;
+inset: 0;
+background: var(–bg);
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+z-index: 500;
+transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.intro.hidden {
+opacity: 0;
+pointer-events: none;
+transform: scale(1.03);
+}
+
+.intro-title {
+font-family: ‘Playfair Display’, serif;
+font-size: clamp(2.5rem, 6vw, 5rem);
+color: var(–gold);
+text-align: center;
+line-height: 1.1;
+margin-bottom: 16px;
+}
+
+.intro-sub {
+font-size: 0.7rem;
+letter-spacing: 0.2em;
+text-transform: uppercase;
+color: var(–muted);
+margin-bottom: 48px;
+}
+
+.intro-years {
+font-family: ‘DM Mono’, monospace;
+font-size: 0.65rem;
+color: var(–muted);
+margin-bottom: 48px;
+letter-spacing: 0.1em;
+}
+
+.intro-btn {
+background: none;
+border: 1px solid var(–gold);
+color: var(–gold);
+font-family: ‘DM Mono’, monospace;
+font-size: 0.65rem;
+letter-spacing: 0.2em;
+text-transform: uppercase;
+padding: 14px 36px;
+cursor: pointer;
+transition: all 0.3s ease;
+}
+
+.intro-btn:hover {
+background: var(–gold);
+color: var(–bg);
+}
+
+.map-outline {
+width: 120px;
+opacity: 0.2;
+margin-bottom: 32px;
+fill: var(–gold);
+}
+</style>
+
+</head>
+<body>
+
+<!-- Intro screen -->
+
+<div class="intro" id="intro">
+  <svg class="map-outline" viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg">
+    <!-- Simplified Tanzania shape -->
+    <path d="M 60 20 L 140 15 L 160 40 L 170 80 L 160 120 L 170 160 L 155 200 L 140 230 L 120 260 L 100 280 L 80 260 L 60 230 L 40 200 L 30 160 L 35 120 L 25 80 L 40 50 Z" fill="currentColor"/>
+  </svg>
+  <div class="intro-title">Tanzania<br>by Year</div>
+  <div class="intro-sub">A journey through history</div>
+  <div class="intro-years">1.8 Million BCE → 2000s</div>
+  <button class="intro-btn" id="startBtn">Begin Exploring →</button>
+</div>
+
+<header>
+  <div>
+    <div class="site-title">Tanzania by Year</div>
+    <div class="site-subtitle">A history in moments</div>
+  </div>
+  <div class="scroll-hint">Scroll to explore</div>
+</header>
+
+<div class="timeline-outer" id="timelineOuter">
+  <div class="timeline-track" id="track">
+
+```
+<!-- ANCIENT ERA -->
+<!-- Above line -->
+<div class="event">
+  <div class="event-upper">
+    <div class="event-card">
+      <span class="event-tag tag-ancient">Ancient</span>
+      <div class="event-year major">1.8M BCE</div>
+      <div class="event-title major">Olduvai Gorge</div>
+      <div class="event-detail">Homo habilis fossils found here — among the oldest evidence of human ancestors on Earth.</div>
+    </div>
+    <div class="event-connector" style="height:50px;"></div>
+  </div>
+  <div class="event-dot major"></div>
+</div>
+
+<div class="event">
+  <div class="event-upper">
+    <div class="event-card">
+      <span class="event-tag tag-ancient">Ancient</span>
+      <div class="event-year">3.6M BCE</div>
+      <div class="event-title">Laetoli Footprints</div>
+      <div class="event-detail">Australopithecus afarensis left footprints in volcanic ash — the oldest evidence of upright walking.</div>
+    </div>
+    <div class="event-connector" style="height:30px;"></div>
+  </div>
+  <div class="event-dot"></div>
+</div>
+
+<div class="event">
+  <div class="event-dot"></div>
+  <div class="event-lower">
+    <div class="event-connector" style="height:40px;"></div>
+    <div class="event-card">
+      <span class="event-tag tag-ancient">Ancient</span>
+      <div class="event-year">500 BCE</div>
+      <div class="event-title">Bantu Migration</div>
+      <div class="event-detail">Bantu-speaking peoples begin settling the region, bringing iron tools and agriculture.</div>
+    </div>
+  </div>
+</div>
+
+<!-- TRADE ERA -->
+<div class="event">
+  <div class="event-upper">
+    <div class="event-card">
+      <span class="event-tag tag-trade">Trade</span>
+      <div class="event-year">100 CE</div>
+      <div class="event-title">Periplus Mention</div>
+      <div class="event-detail">Greek text describes trading ports on the East African coast — Tanzania's coast enters written history.</div>
+    </div>
+    <div class="event-connector" style="height:55px;"></div>
+  </div>
+  <div class="event-dot"></div>
+</div>
+
+<div class="event">
+  <div class="event-dot"></div>
+  <div class="event-lower">
+    <div class="event-connector" style="height:35px;"></div>
+    <div class="event-card">
+      <span class="event-tag tag-trade">Trade</span>
+      <div class="event-year">800s</div>
+      <div class="event-title">Swahili Civilisation</div>
+      <div class="event-detail">Coastal city-states flourish. Arab, Persian and Indian merchants trade gold, ivory and enslaved people through Zanzibar.</div>
+    </div>
+  </div>
+</div>
+
+<div class="event">
+  <div class="event-upper">
+    <div class="event-card">
+      <span class="event-tag tag-trade">Trade</span>
+      <div class="event-year">1498</div>
+      <div class="event-title">Vasco da Gama</div>
+      <div class="event-detail">Portuguese explorer arrives on the coast, disrupting Indian Ocean trade routes for a century.</div>
+    </div>
+    <div class="event-connector" style="height:45px;"></div>
+  </div>
+  <div class="event-dot"></div>
+</div>
+
+<div class="event">
+  <div class="event-dot"></div>
+  <div class="event-lower">
+    <div class="event-connector" style="height:45px;"></div>
+    <div class="event-card">
+      <span class="event-tag tag-trade">Trade</span>
+      <div class="event-year">1698</div>
+      <div class="event-title">Omani Rule Begins</div>
+      <div class="event-detail">The Sultanate of Oman expels the Portuguese and takes control of Zanzibar, transforming it into a clove empire.</div>
+    </div>
+  </div>
+</div>
+
+<div class="event">
+  <div class="event-upper">
+    <div class="event-card">
+      <span class="event-tag tag-trade">Trade</span>
+      <div class="event-year">1840</div>
+      <div class="event-title">Sultan Moves to Zanzibar</div>
+      <div class="event-detail">Sultan Seyyid Said relocates his capital from Muscat to Zanzibar, making it the most powerful city on the East African coast.</div>
+    </div>
+    <div class="event-connector" style="height:40px;"></div>
+  </div>
+  <div class="event-dot"></div>
+</div>
+
+<!-- COLONIAL ERA -->
+<div class="event">
+  <div class="event-dot"></div>
+  <div class="event-lower">
+    <div class="event-connector" style="height:50px;"></div>
+    <div class="event-card">
+      <span class="event-tag tag-colonial">Colonial</span>
+      <div class="event-year">1858</div>
+      <div class="event-title">Burton & Speke Arrive</div>
+      <div class="event-detail">British explorers reach Lake Tanganyika searching for the source of the Nile, opening the interior to colonial attention.</div>
+    </div>
+  </div>
+</div>
+
+<div class="event">
+  <div class="event-upper">
+    <div class="event-card">
+      <span class="event-tag tag-colonial">Colonial</span>
+      <div class="event-year">1886</div>
+      <div class="event-title">Anglo-German Treaty</div>
+      <div class="event-detail">Britain and Germany divide East Africa between them. Germany takes mainland Tanganyika; Britain takes Kenya and Zanzibar.</div>
+    </div>
+    <div class="event-connector" style="height:48px;"></div>
+  </div>
+  <div class="event-dot"></div>
+</div>
+
+<div class="event">
+  <div class="event-dot"></div>
+  <div class="event-lower">
+    <div class="event-connector" style="height:40px;"></div>
+    <div class="event-card">
+      <span class="event-tag tag-colonial">Colonial</span>
+      <div class="event-year">1905–07</div>
+      <div class="event-title">Maji Maji Rebellion</div>
+      <div class="event-detail">Tanzanians revolt against German colonial rule. Over 300,000 die, mostly from famine caused by German scorched-earth tactics.</div>
+    </div>
+  </div>
+</div>
+
+<div class="event">
+  <div class="event-upper">
+    <div class="event-card">
+      <span class="event-tag tag-colonial">Colonial</span>
+      <div class="event-year">1919</div>
+      <div class="event-title">British Mandate</div>
+      <div class="event-detail">After WWI, Germany loses Tanganyika. Britain takes control under a League of Nations mandate.</div>
+    </div>
+    <div class="event-connector" style="height:42px;"></div>
+  </div>
+  <div class="event-dot"></div>
+</div>
+
+<div class="event">
+  <div class="event-dot"></div>
+  <div class="event-lower">
+    <div class="event-connector" style="height:38px;"></div>
+    <div class="event-card">
+      <span class="event-tag tag-colonial">Colonial</span>
+      <div class="event-year">1954</div>
+      <div class="event-title">TANU Founded</div>
+      <div class="event-detail">Julius Nyerere founds the Tanganyika African National Union, the political engine of independence.</div>
+    </div>
+  </div>
+</div>
+
+<!-- INDEPENDENCE ERA -->
+<div class="event">
+  <div class="event-upper">
+    <div class="event-card">
+      <span class="event-tag tag-independence">Independence</span>
+      <div class="event-year major">1961</div>
+      <div class="event-title major">Independence Day</div>
+      <div class="event-detail">December 9 — Tanganyika becomes independent. Julius Nyerere becomes Prime Minister. The flag is raised for the first time.</div>
+    </div>
+    <div class="event-connector" style="height:52px;"></div>
+  </div>
+  <div class="event-dot major"></div>
+</div>
+
+<div class="event">
+  <div class="event-dot"></div>
+  <div class="event-lower">
+    <div class="event-connector" style="height:44px;"></div>
+    <div class="event-card">
+      <span class="event-tag tag-independence">Independence</span>
+      <div class="event-year">1962</div>
+      <div class="event-title">Republic Declared</div>
+      <div class="event-detail">Tanganyika becomes a republic. Nyerere is elected as the first President, stepping down briefly to focus on building TANU.</div>
+    </div>
+  </div>
+</div>
+
+<div class="event">
+  <div class="event-upper">
+    <div class="event-card">
+      <span class="event-tag tag-independence">Independence</span>
+      <div class="event-year major">1963</div>
+      <div class="event-title major">Zanzibar Independence</div>
+      <div class="event-detail">The Sultanate of Zanzibar gains independence from Britain — but not for long.</div>
+    </div>
+    <div class="event-connector" style="height:48px;"></div>
+  </div>
+  <div class="event-dot major"></div>
+</div>
+
+<div class="event">
+  <div class="event-dot"></div>
+  <div class="event-lower">
+    <div class="event-connector" style="height:42px;"></div>
+    <div class="event-card">
+      <span class="event-tag tag-independence">Independence</span>
+      <div class="event-year major">1964</div>
+      <div class="event-title major">Zanzibar Revolution</div>
+      <div class="event-detail">January — The Arab Sultan is overthrown in a violent revolution. Abeid Karume leads the new People's Republic of Zanzibar.</div>
+    </div>
+  </div>
+</div>
+
+<div class="event">
+  <div class="event-upper">
+    <div class="event-card">
+      <span class="event-tag tag-independence">Independence</span>
+      <div class="event-year major">1964</div>
+      <div class="event-title major">🇹🇿 Tanzania Born</div>
+      <div class="event-detail">April 26 — Tanganyika and Zanzibar unite to form the United Republic of Tanzania. Nyerere becomes first President.</div>
+    </div>
+    <div class="event-connector" style="height:55px;"></div>
+  </div>
+  <div class="event-dot major"></div>
+</div>
+
+<!-- MODERN ERA -->
+<div class="event">
+  <div class="event-dot"></div>
+  <div class="event-lower">
+    <div class="event-connector" style="height:40px;"></div>
+    <div class="event-card">
+      <span class="event-tag tag-modern">Modern</span>
+      <div class="event-year">1967</div>
+      <div class="event-title">Arusha Declaration</div>
+      <div class="event-detail">Nyerere launches Ujamaa — African socialism. Banks and industries nationalised. Villages collectivised.</div>
+    </div>
+  </div>
+</div>
+
+<div class="event">
+  <div class="event-upper">
+    <div class="event-card">
+      <span class="event-tag tag-modern">Modern</span>
+      <div class="event-year">1973</div>
+      <div class="event-title">Capital Moved</div>
+      <div class="event-detail">Nyerere moves the capital from Dar es Salaam to Dodoma — a symbolic break from the colonial coastal capital.</div>
+    </div>
+    <div class="event-connector" style="height:44px;"></div>
+  </div>
+  <div class="event-dot"></div>
+</div>
+
+<div class="event">
+  <div class="event-dot"></div>
+  <div class="event-lower">
+    <div class="event-connector" style="height:38px;"></div>
+    <div class="event-card">
+      <span class="event-tag tag-modern">Modern</span>
+      <div class="event-year">1979</div>
+      <div class="event-title">Uganda War</div>
+      <div class="event-detail">Tanzania invades Uganda and ousts dictator Idi Amin, liberating Kampala. A rare African military success story.</div>
+    </div>
+  </div>
+</div>
+
+<div class="event">
+  <div class="event-upper">
+    <div class="event-card">
+      <span class="event-tag tag-modern">Modern</span>
+      <div class="event-year">1985</div>
+      <div class="event-title">Nyerere Steps Down</div>
+      <div class="event-detail">After 21 years, Nyerere voluntarily retires — one of the few African leaders to peacefully transfer power. Ali Hassan Mwinyi succeeds him.</div>
+    </div>
+    <div class="event-connector" style="height:46px;"></div>
+  </div>
+  <div class="event-dot"></div>
+</div>
+
+<div class="event">
+  <div class="event-dot"></div>
+  <div class="event-lower">
+    <div class="event-connector" style="height:40px;"></div>
+    <div class="event-card">
+      <span class="event-tag tag-modern">Modern</span>
+      <div class="event-year">1992</div>
+      <div class="event-title">Multi-Party Democracy</div>
+      <div class="event-detail">Tanzania legalises opposition parties after decades of single-party rule, beginning its democratic transition.</div>
+    </div>
+  </div>
+</div>
+
+<div class="event">
+  <div class="event-upper">
+    <div class="event-card">
+      <span class="event-tag tag-modern">Modern</span>
+      <div class="event-year">1999</div>
+      <div class="event-title">Nyerere Dies</div>
+      <div class="event-detail">Julius Nyerere, "Mwalimu" (The Teacher), dies in London. A continent mourns its most beloved statesman.</div>
+    </div>
+    <div class="event-connector" style="height:44px;"></div>
+  </div>
+  <div class="event-dot"></div>
+</div>
+
+<div class="event">
+  <div class="event-dot"></div>
+  <div class="event-lower">
+    <div class="event-connector" style="height:38px;"></div>
+    <div class="event-card">
+      <span class="event-tag tag-modern">Modern</span>
+      <div class="event-year">2015</div>
+      <div class="event-title">Magufuli Elected</div>
+      <div class="event-detail">John Magufuli wins the presidency, known as "The Bulldozer" for his anti-corruption drive and later controversial COVID stance.</div>
+    </div>
+  </div>
+</div>
+
+<div class="event">
+  <div class="event-upper">
+    <div class="event-card">
+      <span class="event-tag tag-modern">Modern</span>
+      <div class="event-year major">2021</div>
+      <div class="event-title major">First Female President</div>
+      <div class="event-detail">Samia Suluhu Hassan becomes Tanzania's first female president after Magufuli's death — a historic moment for the country and Africa.</div>
+    </div>
+    <div class="event-connector" style="height:52px;"></div>
+  </div>
+  <div class="event-dot major"></div>
+</div>
+
+<!-- End spacer -->
+<div style="width: 15vw; flex-shrink:0;"></div>
+```
+
+  </div>
+</div>
+
+<div class="progress-bar" id="progressBar"></div>
+<div class="year-indicator" id="yearIndicator">1961</div>
+
+<script>
+  // Intro
+  document.getElementById('startBtn').addEventListener('click', () => {
+    document.getElementById('intro').classList.add('hidden');
+  });
+
+  // Drag to scroll
+  const outer = document.getElementById('timelineOuter');
+  let isDown = false, startX, scrollLeft;
+
+  outer.addEventListener('mousedown', e => {
+    isDown = true;
+    outer.classList.add('grabbing');
+    startX = e.pageX - outer.offsetLeft;
+    scrollLeft = outer.scrollLeft;
+  });
+  outer.addEventListener('mouseleave', () => { isDown = false; outer.classList.remove('grabbing'); });
+  outer.addEventListener('mouseup', () => { isDown = false; outer.classList.remove('grabbing'); });
+  outer.addEventListener('mousemove', e => {
+    if (!isDown) return;
+    e.preventDefault();
+    const x = e.pageX - outer.offsetLeft;
+    outer.scrollLeft = scrollLeft - (x - startX) * 1.5;
+  });
+
+  // Touch support
+  let touchStartX, touchScrollLeft;
+  outer.addEventListener('touchstart', e => {
+    touchStartX = e.touches[0].pageX;
+    touchScrollLeft = outer.scrollLeft;
+  });
+  outer.addEventListener('touchmove', e => {
+    const x = e.touches[0].pageX;
+    outer.scrollLeft = touchScrollLeft - (x - touchStartX) * 1.2;
+  });
+
+  // Progress bar + year indicator
+  const years = [
+    { scroll: 0, year: '1.8M BCE' },
+    { scroll: 0.05, year: '500 BCE' },
+    { scroll: 0.15, year: '800 CE' },
+    { scroll: 0.3, year: '1498' },
+    { scroll: 0.45, year: '1886' },
+    { scroll: 0.55, year: '1919' },
+    { scroll: 0.65, year: '1961' },
+    { scroll: 0.75, year: '1964' },
+    { scroll: 0.85, year: '1985' },
+    { scroll: 0.95, year: '2021' },
+  ];
+
+  outer.addEventListener('scroll', () => {
+    const max = outer.scrollWidth - outer.clientWidth;
+    const pct = outer.scrollLeft / max;
+    document.getElementById('progressBar').style.width = (pct * 100) + '%';
+
+    // Year indicator
+    let currentYear = years[0].year;
+    for (const y of years) {
+      if (pct >= y.scroll) currentYear = y.year;
+    }
+    document.getElementById('yearIndicator').textContent = currentYear;
+  });
+</script>
+
+</body>
+</html>
